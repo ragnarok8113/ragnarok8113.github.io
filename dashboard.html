@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Simple Weather Dashboard</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    body {
+      text-align: center;
+      margin-top: 20px;
+      background-color: #f4f4f4;
+    }
+    .button-bar {
+      margin-bottom: 20px;
+    }
+    .weather-box {
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      padding: 15px;
+      margin: 10px;
+    }
+    .weather-row {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .subweather_collumn {
+      background: white;
+      padding: 15px;
+      margin: 10px;
+      justify-items: left;
+    }
+    .subweather {
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      display: flex;
+      justify-content: center;
+    }
+    #map {
+      height: 500px;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Weather Dashboard</h2>
+  <p id="cityName"></p>
+
+  <!-- Button bar -->
+  <div class="button-bar">
+    <a href="WeatherForecast.html" class="d-block mt-4">Back to Search</a>
+    <button class="btn btn-primary" onclick="loadContent('today')">Today</button>
+    <button class="btn btn-primary" onclick="loadContent('hourly')">Hourly</button>
+    <button class="btn btn-primary" onclick="loadContent('10day')">10 Day</button>
+    <button class="btn btn-primary" onclick="loadContent('monthly')">Monthly</button>
+    <button class="btn btn-primary" onclick="loadContent('map')">Map</button>
+  </div>
+
+  <!-- Main -->
+  <div id="mainContainer" class="container"></div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    const city = localStorage.getItem('city') || 'Patras,GR';
+    document.getElementById('cityName').innerText = 'Weather for: ' + city;
+
+    async function loadContent(type) {
+      const res = await fetch(`https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${city}?unitGroup=metric&key=P9SDNA48YBHNHDYAPYEDA9MU9&contentType=json`);
+      const data = await res.json();
+      const container = document.getElementById('mainContainer');
+
+      if (type === 'today') {
+        const today = data.days[0];
+        const tomorrow = data.days[1];
+
+        container.innerHTML = `
+          <div class="weather-row">
+            <div class="weather-box col-md-5">
+              <h4>Today</h4>
+              <p>${data.resolvedAddress}</p>
+              <p>Latitude: ${data.latitude} Longitute: ${data.longitude}</p>
+              <p>${today.conditions}</p>
+              <p>${data.alerts && data.alerts.length > 0 ? '⚠️ Warning: ' + data.alerts[0].event : '☀️ No Weather Warning'}</p>
+              <div class="subweather">
+                <div class="subweather_collumn">
+                  <p>🌡 Current Temp: ${data.currentConditions.temp} °C</p>
+                  <p>🌡 Max: ${today.tempmax} °C</p>
+                  <p>🌡 Min: ${today.tempmin} °C</p>
+                  <p>💧 Humidity: ${data.currentConditions.humidity}%</p>
+                  <p>💧 Dew Point: ${data.currentConditions.dew}°C</p>
+                  <p>🌬 Wind: ${today.windspeed} km/h</p>
+                </div>
+                <div class="subweather_collumn">
+                  <p>🌧 Rain Chance: ${today.precipprob}%</p>
+                  <p>🌧 Rain: ${today.precip} mm</p>
+                  <p>☁ Cloud Cover: ${data.currentConditions.cloudcover}%</p>
+                  <p>🔆 UV index: ${data.currentConditions.uvindex}</p>
+                  <p>☀️ Sunrise: ${today.sunrise}</p>
+                  <p>🌇 Sunset: ${today.sunset}</p>
+                </div>
+              </div>
+            </div>
+            <div class="weather-box col-md-5">
+              <h4>Tomorrow</h4>
+              <p>${tomorrow.conditions}</p>
+              <p>${data.alerts && data.alerts.length > 0 ? '⚠️ Warning: ' + data.alerts[0].event : '☀️ No Weather Warning'}</p>
+              <div class="subweather">
+                <div class="subweather_collumn">
+                  <p>🌡 Temp: ${tomorrow.temp} °C</p>
+                  <p>🌡 Max: ${tomorrow.tempmax} °C</p>
+                  <p>🌡 Min: ${tomorrow.tempmin} °C</p>
+                  <p>💧 Humidity: ${tomorrow.humidity}%</p>
+                  <p>💧 Dew Point: ${tomorrow.dew}°C</p>
+                  <p>🌬 Wind: ${tomorrow.windspeed} km/h</p>
+                </div>
+                <div class="subweather_collumn">
+                  <p>🌧 Rain Chance: ${tomorrow.precipprob}%</p>
+                  <p>🌧 Rain: ${tomorrow.precip} mm</p>
+                  <p>☁ Cloud Cover: ${tomorrow.cloudcover}%</p>
+                  <p>🔆 UV index: ${tomorrow.uvindex}</p>
+                  <p>☀️ Sunrise: ${tomorrow.sunrise}</p>
+                  <p>🌇 Sunset: ${tomorrow.sunset}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      } 
+      
+      
+      
+      
+      else {
+        if (type === 'map') {
+        container.innerHTML = `<div id="map"></div>`; //Καθαρίζει το main container και του θέτει όνομα για το leaflet να βάλει τον χάρτη
+
+        setTimeout(() => {
+          const apiKey = 'P9SDNA48YBHNHDYAPYEDA9MU9';
+          const mapUrl = `https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${city}?unitGroup=metric&key=${apiKey}&contentType=json`;
+
+          const map = L.map('map').setView([38.2442, 21.7325], 7);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+          fetch(mapUrl)
+            .then(response => response.json())
+            .then(data => {
+              if (data.latitude && data.longitude) {
+                map.setView([data.latitude, data.longitude], 10);
+              }
+
+              const stations = data.stations;
+              if (stations) {
+                for (const id in stations) {
+                  const s = stations[id];
+                  const marker = L.marker([s.latitude, s.longitude]).addTo(map);
+                  marker.bindPopup(`
+                    <b>Weather Station</b><br>
+                    Temperature: ${data.currentConditions.temp}°C<br>
+                    Humidity: ${data.currentConditions.humidity}%<br>
+                    Location: ${s.name}
+                  `);
+                }
+              } else {
+                alert("No weather stations data available.");
+              }
+            })
+        }, 100);
+      }
+      if (type === 'hourly'){}
+      if (type === 'monthly'){}
+      if (type === '10day'){} 
+    }
+}
+    //default view
+    loadContent('today');
+  </script>
+</body>
+</html>
