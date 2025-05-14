@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Simple Weather Dashboard</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    body {
+      text-align: center;
+      margin-top: 20px;
+      background-color: #f4f4f4;
+    }
+    .button-bar {
+      margin-bottom: 20px;
+    }
+    .weather-box {
+      height: 100px;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      padding: 15px;
+      margin: 10px;
+    }
+    .weather-row {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .hourly_subweather_collumn {
+      background: white;
+      padding: 15px;
+      justify-items: left;
+    }
+    .today_subweather_collumn {
+      background: white;
+      padding: 15px;
+      justify-items: left;
+      border-radius: 20px;
+    }
+    .subweather {
+      background: white;
+      border: 2px solid #ccc;
+      border-radius: 20px;
+      display: flex;
+      justify-content: center;
+    }
+    #map {
+      height: 700px;
+      width: 100%;
+    }
+
+    .grid-container {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr); 
+      grid-template-rows: repeat(4, auto);   
+      gap: 16px;
+      margin-top: 20px;
+    }
+    .Container {
+      display: flex;
+      justify-content: center;   
+      flex-wrap: wrap;
+      background-image: url('mountain-lake-torres-del-paine-nature-scenery-4k-wallpaper-uhdpaper.com-627@2@b.jpg'); 
+      background-size: cover;   /* Makes the image cover the entire container */
+      background-position: center center; 
+      background-repeat: no-repeat;
+      background-attachment: fixed; 
+      width: 100vw;  
+      height: 100vh;
+      min-height: 300px;         
+
+    }
+    .mapContainer{
+      display: flex;
+      justify-content: center;  
+      align-items: center;      
+      flex-wrap: wrap;          
+      width: 60%;
+      height: 100%;
+      padding: 20px;
+      margin: 0 auto ;
+      border: 20px solid;
+      border-radius: 25px;
+      
+    }
+
+    .weatherbox {
+      height: 42.5%;
+      padding: 12px;
+      background: #f0f0f0;
+      border-radius: 20px;
+      border: 3px solid;
+      justify-content: center;
+      
+      
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Weather Dashboard</h2>
+  <p id="cityName"></p>
+
+  <!-- Button bar -->
+  <div class="button-bar">
+    <a href="index.html" class="d-block mt-4">Back to Search</a>
+    <button class="btn btn-primary" onclick="loadContent('today')">Today</button>
+    <button class="btn btn-primary" onclick="loadContent('hourly')">Hourly</button>
+    <button class="btn btn-primary" onclick="loadContent('10day')">10 Day</button>
+    <button class="btn btn-primary" onclick="loadContent('monthly')">Monthly</button>
+    <button class="btn btn-primary" onclick="loadContent('map')">Map</button>
+  </div>
+
+  <!-- Main -->
+  <!-- Containers -->
+  <div id="mainContainer" class="Container"></div>
+  <div id="weatherGrid" class="grid-container"></div>
+  <div id="map_container" class="mapContainer"></div>
+
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    let map;
+    let trafficLayer; 
+    let evLayer;
+    let isEVLayerVisible; false;
+    const apiKey = 'P9SDNA48YBHNHDYAPYEDA9MU9';
+    const tomtomKey = 'cr9tSVx8vvG27tdlH6veiqnpUYb9kGhg';
+    let mapUrl;
+    const city = localStorage.getItem('city') || 'Patras,GR';
+    document.getElementById('cityName').innerText = 'Weather for: ' + city;
+
+
+    function toggleTraffic() {
+        if (!map) return;
+
+        if (!trafficLayer) {
+          trafficLayer = L.tileLayer(`https://api.tomtom.com/traffic/map/4/tile/flow/relative0/{z}/{x}/{y}.png?key=${tomtomKey}`, {
+            opacity: 0.9,
+            maxZoom: 20
+          });
+          map.addLayer(trafficLayer);
+        } else {
+          if (map.hasLayer(trafficLayer)) {
+            map.removeLayer(trafficLayer);
+          } else {
+            map.addLayer(trafficLayer);
+          }
+        }
+      }
+
+
+      function toggleEVMarkers() {
+      if (!isEVLayerVisible){
+        evLayer.addTo(map);  
+        isEVLayerVisible = true;
+      } else {
+        map.removeLayer(evLayer);
+        isEVLayerVisible = false;
+      }
+    }
+
+    async function loadContent(type) {
+      const res = await fetch(`https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${city}?unitGroup=metric&key=P9SDNA48YBHNHDYAPYEDA9MU9&contentType=json`);
+      const data = await res.json();
+      const grid_container = document.getElementById('weatherGrid');
+      const main_container = document.getElementById('mainContainer');
+      const map_container = document.getElementById('map_container');
+
+      
+
+      if (type === 'today') {
+        grid_container.innerHTML=' '
+        map_container.innerHTML=''
+        map_container.style.display='none'; //Κρυβει ολόκληρο το container του χάρτη, αλλιώς φαίνεται το περίγραμμα
+        main_container.style.display= 'flex';
+        
+        const today = data.days[0];
+        const tomorrow = data.days[1];
+        main_container.innerHTML += `
+          
+            <div class="weatherbox">
+              <h4>Today</h4>
+              <p>${today.datetime}</p>
+              <p>${data.resolvedAddress}</p>
+              <p>Latitude: ${data.latitude} Longitude: ${data.longitude}</p>
+              <p>${data.currentConditions.conditions}</p>
+              <p>${data.alerts && data.alerts.length > 0 ? '⚠️ Warning: ' + data.alerts[0].event : '☀️ No Weather Warning'}</p>
+              <div class="subweather">
+                <div class="today_subweather_collumn">
+                  
+                  <p>🌡 Current: ${data.currentConditions.temp} °C</p>
+                  <p>🌡 Max: ${today.tempmax} °C</p>
+                  <p>🌡 Min: ${today.tempmin} °C</p>
+                  <p>💧 Humidity: ${data.currentConditions.humidity}%</p>
+                  <p>💧 Dew Point: ${data.currentConditions.dew}°C</p>
+                  <p>🌬 Wind: ${data.currentConditions.windspeed} km/h</p>
+                </div>
+                <div class="today_subweather_collumn">
+                  <p>🌧 Rain Chance: ${data.currentConditions.precipprob}%</p>
+                  <p>🌧 Rain: ${data.currentConditions.precip} mm</p>
+                  <p>☁ Cloud Cover: ${data.currentConditions.cloudcover}%</p>
+                  <p>🔆 UV index: ${data.currentConditions.uvindex}</p>
+                  <p>☀️ Sunrise: ${today.sunrise}</p>
+                  <p>🌇 Sunset: ${today.sunset}</p>
+                </div>
+              </div>
+              </div>
+            <div class="weatherbox">
+            <h4>Tomorrow</h4>
+              <p>${today.datetime}</p>
+              <p>${data.resolvedAddress}</p>
+              <p>Latitude: ${data.latitude} Longitude: ${data.longitude}</p>
+              <p>${data.currentConditions.conditions}</p>
+              <p>${data.alerts && data.alerts.length > 0 ? '⚠️ Warning: ' + data.alerts[0].event : '☀️ No Weather Warning'}</p>
+              <div class="subweather">
+                <div class="today_subweather_collumn">
+                  
+                  <p>🌡 Current: ${data.currentConditions.temp} °C</p>
+                  <p>🌡 Max: ${today.tempmax} °C</p>
+                  <p>🌡 Min: ${today.tempmin} °C</p>
+                  <p>💧 Humidity: ${data.currentConditions.humidity}%</p>
+                  <p>💧 Dew Point: ${data.currentConditions.dew}°C</p>
+                  <p>🌬 Wind: ${data.currentConditions.windspeed} km/h</p>
+                </div>
+                <div class="today_subweather_collumn">
+                  <p>🌧 Rain Chance: ${data.currentConditions.precipprob}%</p>
+                  <p>🌧 Rain: ${data.currentConditions.precip} mm</p>
+                  <p>☁ Cloud Cover: ${data.currentConditions.cloudcover}%</p>
+                  <p>🔆 UV index: ${data.currentConditions.uvindex}</p>
+                  <p>☀️ Sunrise: ${today.sunrise}</p>
+                  <p>🌇 Sunset: ${today.sunset}</p>
+                </div>
+              </div>
+            </div>
+            
+            
+            
+          
+          
+
+                   `;
+}   
+      
+
+
+      if (type === 'map') {
+        main_container.innerHTML=' '
+        main_container.style.display= 'none';
+        grid_container.innerHTML=' '
+        map_container.innerHTML=' '
+        map_container.style.display='flex';
+        map_container.innerHTML = `
+          <button class="btn btn-primary" onclick="toggleTraffic()">Show Traffic</button>
+          <button class="btn btn-primary" onclick="toggleEVMarkers()">Show EV Charging Stations</button>
+          <div id="map" style="map"></div>
+        `; //Καθαρίζει το main container και του θέτει όνομα για το leaflet να βάλει τον χάρτη
+        
+        
+        mapUrl = `https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${city}?unitGroup=metric&key=${apiKey}&contentType=json`;
+          setTimeout(() => {
+              map = L.map('map').setView([data.latitude, data.longitude], 10);
+              
+              L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+                    
+              // EV Charging stations
+                    fetch(`https://api.tomtom.com/search/2/poiSearch/EV%20charging%20station.json?key=${tomtomKey}&lat=${data.latitude}&lon=${data.longitude}&radius=100000&limit=100`) //Ακτίνα 100km, μέγιστος αριθμός σταθμών φόρτισης 100
+                      .then(res => res.json())
+                      .then(evData => {
+                        evLayer = L.layerGroup(); // Τρόπος της leaflet για να κάνουμε group πολλα items σε ενα layer.
+                        evData.results.forEach(station => {
+                          const { position, poi } = station;
+
+              // Εικονίδιο για EV Charging Stations
+                          const evIcon = L.icon({
+                            iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fb/Map_pin_icon_green.svg/752px-Map_pin_icon_green.svg.png',
+                            iconSize: [30, 45], 
+                            iconAnchor: [15, 30],
+                            popupAnchor: [0, -30] 
+                          });
+
+              // EV station markers
+                          L.marker([position.lat, position.lon], { icon: evIcon })
+                            .addTo(evLayer)
+                            .bindPopup(`<b>${poi.name}</b><br>EV Charging Station`);
+                        });
+                      });
+
+                   
+                   
+  
+              // Weather Markers
+                    const stations = data.stations;
+                    if (stations) {
+                      for (const id in stations) {
+                        const s = stations[id];
+                        const marker = L.marker([s.latitude, s.longitude]).addTo(map);
+                        marker.bindPopup(`
+                          <b>Weather Station</b><br>
+                          Temperature: ${data.currentConditions.temp}°C<br>
+                          Humidity: ${data.currentConditions.humidity}%<br>
+                          Location: ${s.name}
+                        `);
+                      }
+                    } else {
+                      alert("No weather stations data available.");
+                    }
+                  }
+                
+              
+              , 100);}
+
+          
+          
+      
+      else if (type === 'hourly'){
+        grid_container.innerHTML=' '
+        main_container.innerHTML=' '
+        map_container.innerHTML =' '
+        map_container.style.display='none';
+        main_container.style.display= 'none';
+        for (let i = 0; i < 23; i++) {
+          const hour = data.days[0].hours[i];
+        
+        grid_container.innerHTML += `
+          
+            <div class="weatherbox">
+              <h4>${hour.datetime}</h4>
+              <p>${hour.conditions}</p>
+              <div class="subweather">
+                <div class="hourly_subweather_collumn">
+                  <p>💧 Humidity: ${hour.humidity}%</p>
+                  <p>🌬 Wind: ${hour.windspeed} km/h</p>
+                </div>
+                <div class="subweather_collumn">
+                  <p>🌧 Rain Chance: ${hour.precipprob}%</p>
+                  <p>🌧 Rain: ${hour.precip} mm</p>
+                  <p>☁ Cloud Cover: ${hour.cloudcover}%</p>
+                  <p>🔆 UV index: ${hour.uvindex}</p>
+                </div>
+              </div>
+            </div>
+          
+
+                   `;
+}}
+      
+      if (type === 'monthly'){}
+      if (type === '10day'){} }
+    
+    //default view
+    loadContent('today');
+  </script>
+</body>
+</html>
