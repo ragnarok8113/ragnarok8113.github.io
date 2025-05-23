@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Accordion with File Content</title>
+  <style>
+    .accordion {
+      cursor: pointer;
+      padding: 10px;
+      width: 100%;
+      text-align: left;
+      border: 1px solid #ccc;
+      outline: none;
+      transition: background-color 0.3s ease;
+    }
+
+    .accordion:hover {
+      background-color: #f1f1f1;
+    }
+
+    .panel {
+      display: none;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-top: none;
+    }
+  </style>
+</head>
+<body>
+  <h2>Accordion Example</h2>
+
+  <button class="accordion">Click to View File Content</button>
+  <div class="panel" id="fileContent">
+    <!-- File content will be displayed here -->
+  </div>
+
+  <script>
+    // Accordion toggle functionality
+    const accordion = document.querySelector('.accordion');
+    const panel = document.querySelector('.panel');
+
+    accordion.addEventListener('click', () => {
+      panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+    });
+
+    // Fetch and display file content
+    fetch('blabla.txt') // Replace 'example.txt' with your file path
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('File not found');
+        }
+        return response.text();
+      })
+      .then(data => {
+        document.getElementById('fileContent').textContent = data;
+      })
+      .catch(error => {
+        document.getElementById('fileContent').textContent = 'Error loading file: ' + error.message;
+      });
+  </script>
+</body>
+</html>
+//teleionei to 1
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Display Text File</title>
+</head>
+<body>
+    <h1>Display Contents of a Text File</h1>
+    <div>
+        <label for="fileName">Enter the file name:</label>
+        <input type="text" id="fileName" placeholder="example.txt">
+        <button onclick="loadFile()">Load File</button>
+    </div>
+    <pre id="fileContent" style="border: 1px solid #ccc; padding: 10px; margin-top: 20px;"></pre>
+
+    <script>
+        function loadFile() {
+            const fileName = document.getElementById('fileName').value;
+            if (!fileName) {
+                alert('Please enter a file name.');
+                return;
+            }
+
+            fetch(fileName)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('File not found or cannot be loaded.');
+                    }
+                    return response.text();
+                })
+                .then(data => {
+                    document.getElementById('fileContent').textContent = data;
+                })
+                .catch(error => {
+                    document.getElementById('fileContent').textContent = error.message;
+                });
+        }
+    </script>
+</body>
+</html>
+//teleionei to 2
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Display Text from File</title>
+</head>
+<body>
+  <iframe src="example.txt" width="100%" height="600" style="border:1px solid #ccc;"></iframe>
+</body>
+</html>
+//teleionei to 3
+//episis style kai positioning gia to accorition exei sto history(douleuei)
+//to history douleuei mono stin eikona,sto back to search kai stin anagnorisi polis
